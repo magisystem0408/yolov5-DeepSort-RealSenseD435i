@@ -1,0 +1,5 @@
+
+
+mamushi=["neko","mamushi"]
+
+
