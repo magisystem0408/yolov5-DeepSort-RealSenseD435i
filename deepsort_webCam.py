@@ -52,7 +52,6 @@ class RealSense(object):
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands()
         self.mpDraw = mp.solutions.drawing_utils
-
         self.main()
 
     def main(self):
