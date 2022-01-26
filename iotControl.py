@@ -1,6 +1,13 @@
+import threading
 import sys
 import cv2
 import numpy as np
+import pygame
+import osascript
+import glob
+import time
+import pygame
+import random
 
 sys.path.insert(0, './yolov5')
 from yolov5.models.experimental import attempt_load
@@ -55,11 +62,58 @@ class RealSense(object):
 
         self.mpDraw = mp.solutions.drawing_utils
 
-        self.bulb = Bulb("192.168.1.3")
-        self.bulb.set_rgb(255, 0, 0, )
+        self.bulb = Bulb("192.168.10.8")
+        self.bulb.set_rgb(255, 255, 255, )
 
         self.authentication = False
+        self.main_mode = True
+        self.light_mode = False
+        self.music_mode = False
+        self.music_play_mode = True
+        self.volumeFlag = False
+        self.islighting = False
+
+        self.crashSize = 300
+        self.musicList = glob.glob("./sounds/musics/*.mp3")
+
+        self._command_semaphore = threading.Semaphore(1)
+        self._command_thread = None
+
         self.main()
+
+
+    def send_command(self, command, blocking=True):
+        self._command_thread = threading.Thread(
+            target=self._send_command,
+            args=(command, blocking)
+        )
+        self._command_thread.start()
+
+    def _send_command(self, command, blocking=True):
+        is_acquire = self._command_semaphore.acquire(blocking=blocking)
+        if is_acquire:
+
+            if command == "music_play":
+                pygame.mixer.music.load(self.musicList[0])
+                pygame.mixer.music.play(1)
+                self._command_semaphore.release()
+
+            if command == "music_stop":
+                pygame.mixer.music.stop()
+                self._command_semaphore.release()
+
+            if command == "turn_on":
+                num =random.randint(1,255)
+                self.bulb.set_rgb(num,num,num)
+                self.bulb.turn_on()
+
+                self._command_semaphore.release()
+
+            if command == "turn_off":
+                self.bulb.turn_off()
+                self._command_semaphore.release()
+        else:
+            print("スキップします。")
 
     def main(self):
 
@@ -211,11 +265,10 @@ class RealSense(object):
                     cv2.imshow("authentication", result_image)
 
                 if len(mp_pred_rect) != 0:
-
                     # もしウィンドウが開いたらauthの画面は消す
                     if auth_counter:
                         cv2.destroyWindow("authentication")
-                        auth_counter =False
+                        auth_counter = False
 
                     x, y = mp_pred_rect[0][0], mp_pred_rect[0][1]
                     width, height = mp_pred_rect[0][2], mp_pred_rect[0][3]
@@ -325,10 +378,91 @@ class RealSense(object):
                                                    right_pinky_dip_x, right_pinky_dip_y,
                                                    right_pinky_tip_x, right_pinky_tip_y
                                                    )
-                    cv2.putText(target_image, "TARGET", (20, 70),
-                                cv2.FONT_HERSHEY_PLAIN, 3, (0, 0, 255), 3, cv2.LINE_AA)
-                    cv2.imshow('registor', target_image)
 
+                        firstGester =index_angle >= 170 and thumb_ring_length <= 20 and thumb_middle_length <= 55 and thumb_pinky_length <= 50
+                        secondGesture = thumb_pinky_length <= 40 and thumb_ring_length <= 20 and index_angle >= 170 and middle_angle >= 170
+                        threeGesture = index_angle >= 170 and middle_angle >= 170 and ring_angle >= 170 and thumb_pinky_length <= 40
+                        yeyGesture = index_angle >= 170 and pinky_angle >= 170 and thumb_ring_length <= 40 and thumb_middle_length <= 40
+
+                        if secondGesture and self.main_mode == True:
+                            self.main_mode = False
+                            self.music_mode = True
+
+                        if firstGester and self.main_mode == True:
+                            self.main_mode = False
+                            self.light_mode = True
+
+
+                        if self.main_mode:
+                            cv2.putText(result_image,"MainMode",(40,30),cv2.FONT_HERSHEY_COMPLEX,1,(0,0,255),3)
+
+                        if self.light_mode:
+                            cv2.putText(result_image,"LightMode",(40,30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0,),3)
+                            cv2.putText(result_image, "NomalMode", (40, 70), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 3)
+
+                            if secondGesture and (not self.islighting):
+                                self.islighting = True
+                                self.send_command("turn_on")
+
+                            if (self.islighting) and threeGesture:
+                                self.islighting = False
+                                self.send_command("turn_off")
+
+                            if yeyGesture:
+                                self.light_mode = False
+                                self.main_mode = True
+
+
+
+
+                        if self.music_mode:
+                            cv2.putText(result_image,"Music",(40,30,),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),3)
+                            cv2.putText(result_image,"NomalMode",(40,70), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 3)
+                            # 再生する
+
+                            if firstGester and self.music_play_mode:
+                                self.music_play_mode = False
+                                self.send_command("music_play")
+                                cv2.putText(result_image, "Play", (40, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 3)
+
+                            # 停止する
+                            if not self.music_play_mode:
+                                # print("値がfalseになりました。")
+                                self.music_play_mode = True
+                                self.send_command("music_stop")
+
+                            # ボリューム調整
+                            if threeGesture:
+                                self.volumeFlag = True
+
+                            # if self.volumeFlag:
+                            #     print("test")
+                            #     cv2.line(result_image, (right_thumb_tip_x, right_thumb_tip_y),
+                            #              (right_index_finger_tip_x, right_index_finger_tip_y),
+                            #              (255, 0, 255), 5)
+                            #     cv2.rectangle(result_image, (width - self.crashSize, 0), (width, self.crashSize),
+                            #                   color=(255, 255, 255),
+                            #                   thickness=4)
+                            #     vol = "set volume output volume " + str(
+                            #         np.interp(thumb_index_length, [20, 300], [0, 100]))
+                            #     print(vol)
+                                # osascript.osascript(vol)
+
+                                # self.blob.set_brightness(np.interp(thumb_index_length, [20, 300], [0, 100]))
+
+                                if right_index_finger_tip_x >= width - self.crashSize and right_index_finger_tip_y <= self.crashSize:
+                                    self.volumeFlag = False
+
+                            # yey
+                            if yeyGesture:
+                                self.main_mode = True
+                                self.music_mode = False
+
+
+                        cv2.putText(target_image, "TARGET", (20, 70),
+                                    cv2.FONT_HERSHEY_PLAIN, 3, (0, 0, 255), 3, cv2.LINE_AA)
+
+                    cv2.imshow('registor', target_image)
 
                     cv2.imshow("fuction", result_image)
 
@@ -352,4 +486,5 @@ class RealSense(object):
 
 
 if __name__ == '__main__':
+    pygame.mixer.init(frequency=44100)
     RealSense()
