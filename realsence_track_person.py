@@ -130,10 +130,13 @@ def realsence():
                                  depth])
 
             result_image = annotator.result()
-            print(anotationList)
 
             if len(anotationList)>0:
                 for anotation in anotationList:
+
+                    if anotation[3] =="person":
+                        print(anotation)
+
                     cv2.putText(result_image,str(anotation[10]),(int(anotation[8]),int(anotation[9])),cv2.FONT_HERSHEY_PLAIN,5,(0,0,255),3,cv2.LINE_AA)
 
             images = np.hstack((result_image, depth_color_image))
