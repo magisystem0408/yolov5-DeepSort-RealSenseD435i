@@ -55,3 +55,17 @@ python realsence_track.py
 
 
 ### realsence_track_person.py
+Only detect people and output to the console
+
+The following parameters are output from the console
+```shell
+frame_idx, id, c, 'person', bbox_left, bbox_top, bbox_w, bbox_h, center_x, center_y,depth
+```
+
+![スクリーンショット 2022-01-28 005053](https://user-images.githubusercontent.com/61937077/151394068-1c2c3dda-d1cb-401b-bb3a-de3f1473071d.png)
+
+
+#### Execution method
+```python
+python realsence_track_person.py
+```
