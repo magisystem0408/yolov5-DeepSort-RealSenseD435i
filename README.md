@@ -1,19 +1,57 @@
-## 追加した機能
+# yolov5+Realsence+DeepSense D435i
 
-
-- 各フレームごとに検出した物体を「動画の名前_000001.txt」のようにsnap_shot/以下に保存する機能
-    - 各ファイルは以下の引数を指定しないと生成されない。
-    
-    ```shell
-    --save-txt
-    ```
-    - ファイルに保存される動画の名前は--sourceに指定した動画ファイルの名前になる。
-
-## 実行方法
-
-realsenceを繋げた状態で、下記を実行
-※引数を指定しなくてもrealsenceを読みに行く使用になっている
-
+## Create Environment
 ```shell
-python track.py
+# create conda environment
+conda crate -n <Any name> python=3.8
+conda activate <Any name>
+
+# change directory
+cd personalize_hand
+
+# clone yolov5
+git clone https://github.com/ultralytics/yolov5/tree/aa1859909c96d5e1fc839b2746b45038ee8465c9
+
+# install requirements
+pip install -r requirements.txt
+
+# change yolov5 directory
+cd yolov5
+
+$ install requirements
+pip install -r requirements.txt
 ```
+
+
+## Module used
+### yolov5
+> https://github.com/ultralytics/yolov5
+
+### Yolov5 + Deep Sort with Pytorch
+> https://github.com/mikel-brostrom/Yolov5_DeepSort_Pytorch
+
+### DeepSense D435i
+> https://www.intelrealsense.com/depth-camera-d435i/
+
+## program introduction
+### realsence_track.py
+We have introduced yolov5 and deepsort from the information acquired by deepsense.
+
+The following parameters are output from the console
+```shell
+frame_idx, id, c, names[c], bbox_left, bbox_top, bbox_w, bbox_h, center_x, center_y,depth
+```
+> Image displayed
+![realsence](https://user-images.githubusercontent.com/61937077/151387782-fc5056f3-0dac-4fe5-afc4-07e6146d045d.png)
+![depth](https://user-images.githubusercontent.com/61937077/151387943-a14d4be1-f3cc-4815-bfa0-0a84cbf324c1.png)
+
+> Console Image
+![スクリーンショット 2022-01-28 002628](https://user-images.githubusercontent.com/61937077/151389521-550f1f2f-a187-4599-a617-0f8db8cfbad8.png)
+
+#### Execution method
+```python
+python realsence_track.py
+```
+
+
+### realsence_track_person.py

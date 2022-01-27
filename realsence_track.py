@@ -56,10 +56,8 @@ if half:
 def realsence():
     try:
         # 3つの配列まで登録を可能にする
-        anotationLists = []
         while True:
             # フレーム待ち(Color & Depth)
-##########################################################
             frames = pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
             depth_frame = frames.get_depth_frame()
@@ -69,9 +67,6 @@ def realsence():
             # Depth画像
             depth_color_frame = rs.colorizer().colorize(depth_frame)
             depth_color_image = np.asanyarray(depth_color_frame.get_data())
-
-            ##################
-
             img0 = color_image.copy()
 
             img = letterbox(img0, 640, 32, True)[0]
@@ -133,76 +128,16 @@ def realsence():
                             anotationList.append(
                                 [frame_idx, id, c, names[c], bbox_left, bbox_top, bbox_w, bbox_h, center_x, center_y,
                                  depth])
-                #############################################
-                # print(anotationList)
-                if (len(anotationLists) < 4):
-                    anotationLists.append(anotationList)
-                else:
-                    anotationLists.pop(0)
-                    anotationLists.append(anotationList)
-
-
-                # print("################バラバラにするよん################")
-            #     ここで展開する
-            result_anotationList=[]
-            for anotation in anotationList:
-                curr_frame_idx = anotation[0]
-                curr_id = anotation[1]
-                curr_c = anotation[2]
-                curr_name = anotation[3]
-                curr_bbox_left = anotation[4]
-                curr_bbox_top = anotation[5]
-                curr_bbox_w = anotation[6]
-                curr_bbox_right =curr_bbox_left+curr_bbox_w
-                curr_bbox_h = anotation[7]
-                curr_center_x = anotation[8]
-                curr_center_y = anotation[9]
-                curr_depth = anotation[10]
-
-                # 前フレームに存在しているか
-                for prev_anotationList in anotationLists:
-                    break_flag =False
-                    count=3
-                    for prev_anotation in prev_anotationList:
-                        # print(prev_anotation)
-                        prev_id =prev_anotation[1]
-                        if curr_id ==prev_id:
-                            prev_bbox_left=prev_anotation[4]
-                            prev_bbox_w =prev_anotation[6]
-                            prev_bbox_right =prev_bbox_left+prev_bbox_w
-                            prev_depth=prev_anotation[10]
-
-                            velocity=((curr_depth-prev_depth)/(1/6)/count)
-                            overlapWidth =(curr_bbox_w)-max(0,min(curr_bbox_right,prev_bbox_right)
-                                                            - max(curr_bbox_left,prev_bbox_left))
-
-                            result_anotationList.append([
-                                curr_frame_idx,curr_id,curr_c,curr_name,curr_bbox_left,
-                                curr_bbox_top,curr_bbox_w,curr_bbox_h,curr_center_x,curr_center_y,
-                                curr_depth,velocity,overlapWidth
-                            ])
-
-                            break_flag =True
-                            break
-                        # print("###########################")
-                    count-=1
-                    if break_flag:
-                        break
-
-            print(result_anotationList)
-            #################
-            # print("#######################終了#########################")
 
             result_image = annotator.result()
+            print(anotationList)
 
             if len(anotationList)>0:
                 for anotation in anotationList:
                     cv2.putText(result_image,str(anotation[10]),(int(anotation[8]),int(anotation[9])),cv2.FONT_HERSHEY_PLAIN,5,(0,0,255),3,cv2.LINE_AA)
 
-            # 表示
             images = np.hstack((result_image, depth_color_image))
             cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
-            #
             cv2.imshow('RealSense', images)
 
             if cv2.waitKey(1) & 0xff == 27:
