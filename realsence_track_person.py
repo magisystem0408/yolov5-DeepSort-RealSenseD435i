@@ -57,7 +57,7 @@ if half:
 def realsence():
     try:
         # 3つの配列まで登録を可能にする
-        while True
+        while True:
             # フレーム待ち(Color & Depth)
             frames = pipeline.wait_for_frames()
             aligned_frames = align.process(frames)
