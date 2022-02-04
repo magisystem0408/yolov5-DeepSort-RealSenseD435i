@@ -31,6 +31,7 @@ config.enable_stream(rs.stream.depth, WIDTH, HEIGHT, rs.format.z16, FPS)
 # ストリーミング開始
 pipeline = rs.pipeline()
 profile = pipeline.start(config)
+align = rs.align(rs.stream.color)
 
 cfg = get_config()
 cfg.merge_from_file("deep_sort_pytorch/configs/deep_sort.yaml")
@@ -59,8 +60,9 @@ def realsence():
         while True:
             # フレーム待ち(Color & Depth)
             frames = pipeline.wait_for_frames()
-            color_frame = frames.get_color_frame()
-            depth_frame = frames.get_depth_frame()
+            aligned_frames = align.process(frames)
+            color_frame = aligned_frames.get_color_frame()
+            depth_frame = aligned_frames.get_depth_frame()
             if not depth_frame or not color_frame:
                 continue
             color_image = np.asanyarray(color_frame.get_data())
@@ -108,34 +110,30 @@ def realsence():
                             cls = output[5]
 
                             c = int(cls)  # integer class
-                            label = f'{id} {names[c]} {conf:.2f}'
-                            annotator.box_label(bboxes, label, color=colors(c, True))
+                            if names[c] == "person":
+                                label = f'{id} {names[c]} {conf:.2f}'
+                                annotator.box_label(bboxes, label, color=colors(c, True))
 
-                            bbox_left = output[0]
-                            bbox_top = output[1]
-                            bbox_w = output[2] - output[0]
-                            bbox_h = output[3] - output[1]
+                                bbox_left = output[0]
+                                bbox_top = output[1]
+                                bbox_w = output[2] - output[0]
+                                bbox_h = output[3] - output[1]
 
-                            center_x = math.floor(bbox_left + (bbox_w / 2))
-                            center_y = math.floor(bbox_top + (bbox_h / 2))
+                                center_x = math.floor(bbox_left + (bbox_w / 2))
+                                center_y = math.floor(bbox_top + (bbox_h / 2))
 
-                            center_mask = np.array(
-                                [list(item[center_x - 5: center_x + 5]) for item in
-                                 depth_color_image[center_y - 5: center_y + 5]])
-
-                            depth = np.median(center_mask)
-
-                            anotationList.append(
-                                [frame_idx, id, c, names[c], bbox_left, bbox_top, bbox_w, bbox_h, center_x, center_y,
-                                 depth])
+                                depth = depth_frame.get_distance(center_x, center_y)
+                            
+                                anotationList.append(
+                                    [frame_idx, id, c, names[c], bbox_left, bbox_top, bbox_w, bbox_h, center_x, center_y,
+                                    depth])
 
             result_image = annotator.result()
 
             if len(anotationList)>0:
                 for anotation in anotationList:
 
-                    if anotation[3] =="person":
-                        print(anotation)
+                    print(anotation)
 
                     cv2.putText(result_image,str(anotation[10]),(int(anotation[8]),int(anotation[9])),cv2.FONT_HERSHEY_PLAIN,5,(0,0,255),3,cv2.LINE_AA)
 
