@@ -41,6 +41,23 @@ The following parameters are output from the console
 ```shell
 frame_idx, id, c, names[c], bbox_left, bbox_top, bbox_w, bbox_h, center_x, center_y,depth
 ```
+
+| Param     | Description                                         |
+|-----------|-----------------------------------------------------|
+| frame_idx | frame count                                         |
+| id        | TD                                                  |
+| c         | tracking id                                          |
+| names[c]        | name label                                          |
+| bbox_top        | TD                                                  |
+| bbox_w        | TD                                                  |
+| bbox_top        | TD                                                  |
+| bbox_h        | TD                                                  |
+| center_x        | x coordinates of the center of the bounding box.    |
+| center_y        | Y coordinates of the center of the bounding box.    |                                             |
+| depth        | Distance between camera and object. The unit is mm. |
+
+
+
 > Image displayed
 ![realsence](https://user-images.githubusercontent.com/61937077/151387782-fc5056f3-0dac-4fe5-afc4-07e6146d045d.png)
 ![depth](https://user-images.githubusercontent.com/61937077/151387943-a14d4be1-f3cc-4815-bfa0-0a84cbf324c1.png)
