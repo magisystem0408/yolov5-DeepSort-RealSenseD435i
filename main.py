@@ -9,7 +9,7 @@ import pygame
 from yeelight import Bulb
 from yeelight import discover_bulbs
 
-import models.handDetector as htm
+import handDetector as htm
 
 
 class HandControl(object):
